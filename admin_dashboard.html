@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <style>
+    :root { --bg:#f5f2eb; --card:#fff; --ink:#1d1e22; --muted:#68738b; --brand:#0f766e; --line:#e5e0d5; --danger:#b42334; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif; color:var(--ink); background:linear-gradient(180deg,#f8f5ef,var(--bg)); }
+    .wrap { max-width:1180px; margin:0 auto; padding:20px; }
+    .hero { border-radius:16px; color:#fff; background:linear-gradient(125deg,#173f5f,#20639b,#3caea3); padding:18px; }
+    .hero-row { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; align-items:center; }
+    .pill { padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); font-size:.9rem; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+    .row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; align-items:center; }
+    input, select { border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+    button { border:0; border-radius:8px; padding:9px 12px; font-weight:600; cursor:pointer; }
+    .btn-main { background:var(--brand); color:#fff; }
+    .btn-danger { background:#fff3f4; color:var(--danger); border:1px solid #ffd7dc; }
+    .status { margin-top:10px; border:1px solid #d8e7e4; background:#f4fbfa; border-radius:8px; padding:10px; min-height:42px; color:#124; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; font-size:.92rem; }
+    th, td { border-bottom:1px solid var(--line); padding:7px; text-align:left; }
+    th { color:var(--muted); }
+    @media (max-width:920px) { .grid { grid-template-columns:1fr; } .wrap { padding:12px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-row">
+        <div>
+          <h1 style="margin:0;">Admin Dashboard</h1>
+          <p style="margin:6px 0 0; color:rgba(255,255,255,.92);">Manage faculties, semesters and subjects.</p>
+        </div>
+        <div class="row" style="margin-top:0;">
+          <span class="pill">User: {{ user }} | Role: {{ role }}</span>
+          <button class="btn-danger" id="logoutBtn" type="button">Logout</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2 style="margin:0;">Faculty Accounts</h2>
+        <div class="row">
+          <input id="facultyUsername" type="text" placeholder="Username">
+          <input id="facultyPassword" type="password" placeholder="Password (min 6)">
+          <input id="facultyName" type="text" placeholder="Full name (optional)">
+          <button class="btn-main" id="addFacultyBtn" type="button">Add Faculty</button>
+        </div>
+        <table>
+          <thead><tr><th>Username</th><th>Name</th><th>Action</th></tr></thead>
+          <tbody id="facultyBody"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2 style="margin:0;">Manage Semesters</h2>
+        <div class="row">
+          <input id="semesterName" type="text" placeholder="e.g. Semester 6">
+          <button class="btn-main" id="addSemesterBtn" type="button">Add Semester</button>
+        </div>
+        <table>
+          <thead><tr><th>Semester</th><th>Subjects</th><th>Action</th></tr></thead>
+          <tbody id="semesterBody"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2 style="margin:0;">Manage Subjects</h2>
+        <div class="row">
+          <select id="subjectSemester"></select>
+          <input id="subjectName" type="text" placeholder="Subject name">
+          <button class="btn-main" id="addSubjectBtn" type="button">Add Subject</button>
+        </div>
+        <table>
+          <thead><tr><th>Semester</th><th>Subject</th><th>Action</th></tr></thead>
+          <tbody id="subjectBody"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2 style="margin:0;">Faculty Subject Mapping</h2>
+        <div class="row">
+          <select id="assignFaculty"></select>
+          <select id="assignSemester"></select>
+          <select id="assignSubject"></select>
+          <button class="btn-main" id="assignBtn" type="button">Assign</button>
+        </div>
+        <table>
+          <thead><tr><th>Semester</th><th>Subject</th><th>Action</th></tr></thead>
+          <tbody id="assignmentBody"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2 style="margin:0;">Records Control</h2>
+        <p style="color:#68738b;">This clears global attendance records. Faculty dashboards stay separate.</p>
+        <button class="btn-danger" id="clearBtn" type="button">Clear All Attendance Records</button>
+      </section>
+    </div>
+
+    <div class="status" id="status">Admin panel ready.</div>
+  </div>
+
+  <script>
+    const statusBox = document.getElementById("status");
+    let facultyCache = [];
+    let semesterCache = [];
+
+    function setStatus(text, isError = false) {
+      statusBox.textContent = text;
+      statusBox.style.background = isError ? "#fff2f3" : "#f4fbfa";
+      statusBox.style.borderColor = isError ? "#ffd7dc" : "#d8e7e4";
+      statusBox.style.color = isError ? "#701" : "#124";
+    }
+
+    function redirectToLogin() { window.location.href = "/login"; }
+
+    async function send(url, method, payload) {
+      const opts = { method };
+      if (payload instanceof FormData) {
+        opts.body = payload;
+      } else if (payload) {
+        opts.headers = { "Content-Type": "application/json" };
+        opts.body = JSON.stringify(payload);
+      }
+      const res = await fetch(url, opts);
+      if (res.status === 401) { redirectToLogin(); return null; }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    async function getJson(url) {
+      const res = await fetch(url);
+      if (res.status === 401) { redirectToLogin(); return null; }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    async function logout() {
+      const out = await send("/logout", "POST", new FormData());
+      window.location.href = (out && out.redirect) || "/login";
+    }
+
+    async function loadFaculties() {
+      const data = await getJson("/api/faculty-users");
+      const list = (data && data.faculty_users) || [];
+      facultyCache = list;
+      const body = document.getElementById("facultyBody");
+      const facultySelect = document.getElementById("assignFaculty");
+      body.innerHTML = list.length
+        ? list.map(f => `<tr><td>${f.username}</td><td>${f.full_name || "-"}</td><td><button class='btn-danger' data-fac-del='${f.id}'>Delete</button></td></tr>`).join("")
+        : "<tr><td colspan='3'>No faculty users found.</td></tr>";
+      facultySelect.innerHTML = list.length
+        ? list.map(f => `<option value='${f.id}'>${f.username}</option>`).join("")
+        : "<option value=''>No faculty found</option>";
+
+      body.querySelectorAll("[data-fac-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Delete this faculty account?")) return;
+          try {
+            await send(`/api/faculty-users/${btn.dataset.facDel}`, "DELETE");
+            setStatus("Faculty deleted.");
+            await refreshAdmin();
+          } catch (err) {
+            setStatus(err.message, true);
+          }
+        });
+      });
+    }
+
+    async function loadSemesters() {
+      const data = await getJson("/api/semesters");
+      const list = (data && data.semesters) || [];
+      semesterCache = list;
+      const semBody = document.getElementById("semesterBody");
+      const semSelect = document.getElementById("subjectSemester");
+      const assignSemSelect = document.getElementById("assignSemester");
+
+      semSelect.innerHTML = list.length
+        ? list.map(s => `<option value='${s.id}'>${s.name}</option>`).join("")
+        : "<option value=''>No semesters found</option>";
+      assignSemSelect.innerHTML = list.length
+        ? list.map(s => `<option value='${s.id}'>${s.name}</option>`).join("")
+        : "<option value=''>No semesters found</option>";
+
+      semBody.innerHTML = list.length
+        ? list.map(s => `<tr><td>${s.name}</td><td>${s.subject_count}</td><td><button class='btn-danger' data-sem-del='${s.id}'>Delete</button></td></tr>`).join("")
+        : "<tr><td colspan='3'>No semesters yet.</td></tr>";
+
+      semBody.querySelectorAll("[data-sem-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Delete this semester and subjects?")) return;
+          try {
+            await send(`/api/semesters/${btn.dataset.semDel}`, "DELETE");
+            setStatus("Semester deleted.");
+            await refreshAdmin();
+          } catch (err) {
+            setStatus(err.message, true);
+          }
+        });
+      });
+    }
+
+    async function loadSubjects() {
+      const data = await getJson("/api/subjects");
+      const list = (data && data.subjects) || [];
+      const body = document.getElementById("subjectBody");
+      body.innerHTML = list.length
+        ? list.map(s => `<tr><td>${s.semester_name}</td><td>${s.name}</td><td><button class='btn-danger' data-sub-del='${s.id}'>Delete</button></td></tr>`).join("")
+        : "<tr><td colspan='3'>No subjects yet.</td></tr>";
+
+      body.querySelectorAll("[data-sub-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Delete this subject?")) return;
+          try {
+            await send(`/api/subjects/${btn.dataset.subDel}`, "DELETE");
+            setStatus("Subject deleted.");
+            await refreshAdmin();
+          } catch (err) {
+            setStatus(err.message, true);
+          }
+        });
+      });
+    }
+
+    async function loadAssignableSubjects() {
+      const semester_id = Number(document.getElementById("assignSemester").value);
+      const subjectSelect = document.getElementById("assignSubject");
+      if (!semester_id) {
+        subjectSelect.innerHTML = "<option value=''>No subjects</option>";
+        return;
+      }
+      const data = await getJson(`/api/subjects?semester_id=${semester_id}`);
+      const list = (data && data.subjects) || [];
+      subjectSelect.innerHTML = list.length
+        ? list.map(s => `<option value='${s.id}'>${s.name}</option>`).join("")
+        : "<option value=''>No subjects</option>";
+    }
+
+    async function loadAssignments() {
+      const faculty_user_id = Number(document.getElementById("assignFaculty").value);
+      const body = document.getElementById("assignmentBody");
+      if (!faculty_user_id) {
+        body.innerHTML = "<tr><td colspan='3'>Select faculty to view mapping.</td></tr>";
+        return;
+      }
+      const data = await getJson(`/api/faculty-assignments?faculty_user_id=${faculty_user_id}`);
+      const list = (data && data.assignments) || [];
+      body.innerHTML = list.length
+        ? list.map(a => `<tr><td>${a.semester_name}</td><td>${a.subject_name}</td><td><button class='btn-danger' data-ass-del='${a.subject_id}'>Remove</button></td></tr>`).join("")
+        : "<tr><td colspan='3'>No mapping found for this faculty.</td></tr>";
+
+      body.querySelectorAll("[data-ass-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          try {
+            await send("/api/faculty-assignments", "DELETE", {
+              faculty_user_id,
+              subject_id: Number(btn.dataset.assDel),
+            });
+            setStatus("Mapping removed.");
+            await loadAssignments();
+          } catch (err) {
+            setStatus(err.message, true);
+          }
+        });
+      });
+    }
+
+    async function refreshAdmin() {
+      await Promise.all([loadFaculties(), loadSemesters(), loadSubjects()]);
+      await loadAssignableSubjects();
+      await loadAssignments();
+    }
+
+    document.getElementById("addFacultyBtn").addEventListener("click", async () => {
+      const username = document.getElementById("facultyUsername").value.trim();
+      const password = document.getElementById("facultyPassword").value;
+      const full_name = document.getElementById("facultyName").value.trim();
+      if (!username || !password) return setStatus("Username and password required.", true);
+      try {
+        await send("/api/faculty-users", "POST", { username, password, full_name });
+        document.getElementById("facultyUsername").value = "";
+        document.getElementById("facultyPassword").value = "";
+        document.getElementById("facultyName").value = "";
+        setStatus("Faculty account created.");
+        await loadFaculties();
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    });
+
+    document.getElementById("addSemesterBtn").addEventListener("click", async () => {
+      const name = document.getElementById("semesterName").value.trim();
+      if (!name) return setStatus("Enter semester name.", true);
+      try {
+        await send("/api/semesters", "POST", { name });
+        document.getElementById("semesterName").value = "";
+        setStatus("Semester created.");
+        await refreshAdmin();
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    });
+
+    document.getElementById("assignSemester").addEventListener("change", async () => {
+      await loadAssignableSubjects();
+    });
+
+    document.getElementById("assignFaculty").addEventListener("change", async () => {
+      await loadAssignments();
+    });
+
+    document.getElementById("assignBtn").addEventListener("click", async () => {
+      const faculty_user_id = Number(document.getElementById("assignFaculty").value);
+      const subject_id = Number(document.getElementById("assignSubject").value);
+      if (!faculty_user_id || !subject_id) return setStatus("Select faculty and subject.", true);
+      try {
+        await send("/api/faculty-assignments", "POST", { faculty_user_id, subject_id });
+        setStatus("Subject assigned to faculty.");
+        await loadAssignments();
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    });
+
+    document.getElementById("addSubjectBtn").addEventListener("click", async () => {
+      const semester_id = Number(document.getElementById("subjectSemester").value);
+      const name = document.getElementById("subjectName").value.trim();
+      if (!semester_id || !name) return setStatus("Select semester and enter subject.", true);
+      try {
+        await send("/api/subjects", "POST", { semester_id, name });
+        document.getElementById("subjectName").value = "";
+        setStatus("Subject created.");
+        await refreshAdmin();
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", async () => {
+      if (!confirm("Clear all attendance records?")) return;
+      try {
+        await send("/attendance/clear", "POST", new FormData());
+        setStatus("All attendance records cleared.");
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+    refreshAdmin();
+  </script>
+</body>
+</html>

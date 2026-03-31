@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Attendance Dashboard</title>
+  <style>
+    :root {
+      --bg: #f5f2eb;
+      --card: #ffffff;
+      --ink: #1d1e22;
+      --muted: #68738b;
+      --brand: #0f766e;
+      --line: #e5e0d5;
+      --danger: #b42334;
+      --warn: #d97706;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 10%, #fff, rgba(255,255,255,0) 30%),
+        linear-gradient(180deg, #f8f5ef, var(--bg));
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .hero {
+      border-radius: 16px;
+      color: #fff;
+      background: linear-gradient(125deg, #173f5f, #20639b, #3caea3);
+      padding: 18px;
+      box-shadow: 0 14px 28px rgba(0,0,0,0.13);
+    }
+
+    .hero-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.3);
+      font-size: 0.9rem;
+    }
+
+    h1, h2, h3 { margin: 0; }
+
+    h2 {
+      margin-bottom: 12px;
+      font-size: 1.2rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 5px 14px rgba(0,0,0,0.06);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    input, select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #fff;
+      min-width: 0;
+    }
+
+    button, .btn-link {
+      border: 0;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-main { background: var(--brand); color: #fff; }
+    .btn-soft { background: #edf4f3; color: #123; border: 1px solid #d8e7e4; }
+    .btn-danger { background: #fff3f4; color: var(--danger); border: 1px solid #ffd7dc; }
+
+    .status {
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #d8e7e4;
+      background: #f4fbfa;
+      color: #124;
+      padding: 10px;
+      min-height: 42px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      background: #fcfaf5;
+    }
+
+    .stat .label { color: var(--muted); font-size: 0.86rem; }
+    .stat .value { font-size: 1.2rem; font-weight: 700; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 7px;
+    }
+
+    th { color: var(--muted); font-weight: 600; }
+
+    video, img {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      min-height: 220px;
+      object-fit: cover;
+      background: #f4f4f4;
+    }
+
+    .muted { color: var(--muted); }
+
+    .alert-box {
+      border: 1px solid #ffe4be;
+      background: #fff7eb;
+      color: #7a4504;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    @media (max-width: 920px) {
+      .grid { grid-template-columns: 1fr; }
+      .wrap { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-row">
+        <div>
+          <h1>Government Engineering College Ajmer</h1>
+          <p style="margin:6px 0 0; color: rgba(255,255,255,.92);">AI Smart Attendance Management</p>
+        </div>
+        <div class="row" style="margin-top:0;">
+          <span class="pill">User: {{ user }} | Role: {{ role }}</span>
+          <button class="btn-danger" id="logoutBtn" type="button">Logout</button>
+        </div>
+      </div>
+    </section>
+
+    {% if role == "admin" %}
+    <div class="grid">
+      <section class="card">
+        <h2>Manage Semesters</h2>
+        <div class="row">
+          <input id="semesterName" type="text" placeholder="e.g. Semester 6">
+          <button class="btn-main" id="addSemesterBtn" type="button">Add Semester</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Semester</th><th>Subjects</th><th>Action</th></tr>
+          </thead>
+          <tbody id="semesterBody"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Manage Subjects</h2>
+        <div class="stack">
+          <select id="subjectSemester"></select>
+          <div class="row">
+            <input id="subjectName" type="text" placeholder="Subject name">
+            <button class="btn-main" id="addSubjectBtn" type="button">Add Subject</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Semester</th><th>Subject</th><th>Action</th></tr>
+          </thead>
+          <tbody id="subjectBody"></tbody>
+        </table>
+      </section>
+    </div>
+    <div id="status" class="status">Admin panel ready.</div>
+    {% endif %}
+
+    {% if role == "faculty" or role == "admin" %}
+    <div class="grid">
+      <section class="card">
+        <h2>Take Attendance</h2>
+        <div class="row">
+          <select id="facultySemester"></select>
+          <select id="facultySubject"></select>
+          <button class="btn-main" id="setContextBtn" type="button">Start Attendance</button>
+        </div>
+        <p class="muted" id="contextLabel" style="margin:8px 0 0;">No semester/subject selected.</p>
+
+        <div style="margin-top:10px;">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="canvas" style="display:none;"></canvas>
+          <div class="row">
+            <button class="btn-main" id="captureBtn" type="button">Capture from Camera</button>
+            <input type="file" id="imageUpload" accept="image/*">
+            <button class="btn-soft" id="analyzeImageBtn" type="button">Analyze Image</button>
+          </div>
+          <div class="row">
+            <input type="file" id="videoUpload" accept="video/*">
+            <button class="btn-soft" id="analyzeVideoBtn" type="button">Analyze Video</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Class Attendance</h2>
+        <div class="stats">
+          <div class="stat"><div class="label">Total Records</div><div class="value" id="totalRecords">0</div></div>
+          <div class="stat"><div class="label">Today Records</div><div class="value" id="todayRecords">0</div></div>
+          <div class="stat"><div class="label">Unique Students</div><div class="value" id="uniqueStudents">0</div></div>
+          <div class="stat"><div class="label">Known Faces</div><div class="value" id="knownFaces">0</div></div>
+        </div>
+        <div class="row">
+          <a class="btn-link btn-soft" id="downloadLink" href="/attendance/download">Download CSV</a>
+          {% if role == "admin" %}
+          <button class="btn-danger" id="clearBtn" type="button">Clear Records</button>
+          {% endif %}
+        </div>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Semester</th><th>Subject</th><th>Timestamp</th></tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </section>
+    </div>
+    <div id="status" class="status">Faculty panel ready.</div>
+    {% endif %}
+
+    {% if role == "student" %}
+    <div class="grid">
+      <section class="card">
+        <h2>Attendance Overview</h2>
+        <p class="muted">Student: <strong>{{ student_name }}</strong></p>
+        <div class="stats">
+          <div class="stat"><div class="label">Overall Percentage</div><div class="value" id="overallPercentage">0%</div></div>
+          <div class="stat"><div class="label">Low Attendance Subjects</div><div class="value" id="lowCount">0</div></div>
+        </div>
+        <div class="alert-box" id="alertsBox" style="margin-top:10px;">No low attendance alerts.</div>
+
+        <h3 style="margin-top:14px;">Subject-wise Attendance</h3>
+        <table>
+          <thead>
+            <tr><th>Semester</th><th>Subject</th><th>Attended</th><th>Total</th><th>%</th></tr>
+          </thead>
+          <tbody id="subjectSummaryBody"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>My Attendance Records</h2>
+        <table>
+          <thead>
+            <tr><th>Semester</th><th>Subject</th><th>Timestamp</th></tr>
+          </thead>
+          <tbody id="studentRecordsBody"></tbody>
+        </table>
+      </section>
+    </div>
+    <div id="status" class="status">Student panel ready. Low attendance threshold: {{ low_attendance_threshold }}%.</div>
+    {% endif %}
+  </div>
+
+  <script>
+    const ROLE = "{{ role }}";
+    const statusBox = document.getElementById("status");
+
+    function setStatus(text, isError = false) {
+      if (!statusBox) return;
+      statusBox.textContent = text;
+      statusBox.style.background = isError ? "#fff2f3" : "#f4fbfa";
+      statusBox.style.borderColor = isError ? "#ffd7dc" : "#d8e7e4";
+      statusBox.style.color = isError ? "#701" : "#124";
+    }
+
+    function redirectToLogin() {
+      window.location.href = "/login";
+    }
+
+    async function getJson(url) {
+      const res = await fetch(url);
+      if (res.status === 401) {
+        redirectToLogin();
+        return null;
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    async function send(url, method, payload) {
+      const opts = { method };
+      if (payload instanceof FormData) {
+        opts.body = payload;
+      } else if (payload) {
+        opts.headers = { "Content-Type": "application/json" };
+        opts.body = JSON.stringify(payload);
+      }
+
+      const res = await fetch(url, opts);
+      if (res.status === 401) {
+        redirectToLogin();
+        return null;
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    async function logout() {
+      try {
+        const out = await send("/logout", "POST", new FormData());
+        window.location.href = (out && out.redirect) || "/login";
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+
+    if (ROLE === "admin") {
+      const semesterBody = document.getElementById("semesterBody");
+      const subjectBody = document.getElementById("subjectBody");
+      const subjectSemester = document.getElementById("subjectSemester");
+
+      async function loadSemesters() {
+        const data = await getJson("/api/semesters");
+        if (!data) return [];
+        const list = data.semesters || [];
+
+        subjectSemester.innerHTML = list.length
+          ? list.map(s => `<option value="${s.id}">${s.name}</option>`).join("")
+          : "<option value=''>No semesters found</option>";
+
+        semesterBody.innerHTML = list.length
+          ? list.map(s => `<tr><td>${s.name}</td><td>${s.subject_count}</td><td><button class='btn-danger' data-sem-del='${s.id}'>Delete</button></td></tr>`).join("")
+          : "<tr><td colspan='3'>No semesters yet.</td></tr>";
+
+        semesterBody.querySelectorAll("[data-sem-del]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (!confirm("Delete this semester and its subjects?")) return;
+            try {
+              await send(`/api/semesters/${btn.dataset.semDel}`, "DELETE");
+              setStatus("Semester deleted.");
+              await refreshAdmin();
+            } catch (err) {
+              setStatus(err.message, true);
+            }
+          });
+        });
+
+        return list;
+      }
+
+      async function loadSubjects() {
+        const data = await getJson("/api/subjects");
+        if (!data) return;
+        const list = data.subjects || [];
+        subjectBody.innerHTML = list.length
+          ? list.map(s => `<tr><td>${s.semester_name}</td><td>${s.name}</td><td><button class='btn-danger' data-sub-del='${s.id}'>Delete</button></td></tr>`).join("")
+          : "<tr><td colspan='3'>No subjects yet.</td></tr>";
+
+        subjectBody.querySelectorAll("[data-sub-del]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (!confirm("Delete this subject?")) return;
+            try {
+              await send(`/api/subjects/${btn.dataset.subDel}`, "DELETE");
+              setStatus("Subject deleted.");
+              await refreshAdmin();
+            } catch (err) {
+              setStatus(err.message, true);
+            }
+          });
+        });
+      }
+
+      async function refreshAdmin() {
+        await Promise.all([loadSemesters(), loadSubjects()]);
+      }
+
+      document.getElementById("addSemesterBtn").addEventListener("click", async () => {
+        const name = document.getElementById("semesterName").value.trim();
+        if (!name) return setStatus("Enter semester name.", true);
+        try {
+          await send("/api/semesters", "POST", { name });
+          document.getElementById("semesterName").value = "";
+          setStatus("Semester created.");
+          await refreshAdmin();
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      });
+
+      document.getElementById("addSubjectBtn").addEventListener("click", async () => {
+        const semester_id = Number(subjectSemester.value);
+        const name = document.getElementById("subjectName").value.trim();
+        if (!semester_id || !name) return setStatus("Select semester and enter subject name.", true);
+        try {
+          await send("/api/subjects", "POST", { semester_id, name });
+          document.getElementById("subjectName").value = "";
+          setStatus("Subject created.");
+          await refreshAdmin();
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      });
+
+      refreshAdmin();
+    }
+
+    if (ROLE === "faculty" || ROLE === "admin") {
+      const semesterEl = document.getElementById("facultySemester");
+      const subjectEl = document.getElementById("facultySubject");
+      const contextLabel = document.getElementById("contextLabel");
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+
+      async function loadSemesters() {
+        const data = await getJson("/api/semesters");
+        if (!data) return;
+        const semesters = data.semesters || [];
+        semesterEl.innerHTML = semesters.length
+          ? semesters.map(s => `<option value="${s.id}">${s.name}</option>`).join("")
+          : "<option value=''>No semesters available</option>";
+
+        if (semesters.length) {
+          await loadSubjects(Number(semesterEl.value));
+        } else {
+          subjectEl.innerHTML = "<option value=''>No subjects available</option>";
+        }
+      }
+
+      async function loadSubjects(semesterId) {
+        const data = await getJson(`/api/subjects?semester_id=${semesterId}`);
+        if (!data) return;
+        const subjects = data.subjects || [];
+        subjectEl.innerHTML = subjects.length
+          ? subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join("")
+          : "<option value=''>No subjects in semester</option>";
+      }
+
+      async function refreshContext() {
+        const data = await getJson("/api/faculty/context");
+        if (!data || !data.context || !data.context.subject_id) {
+          contextLabel.textContent = "No semester/subject selected.";
+          return;
+        }
+
+        const ctx = data.context;
+        contextLabel.textContent = `Active: ${ctx.semester_name} / ${ctx.subject_name}`;
+        document.getElementById("downloadLink").href = `/attendance/download?semester_id=${ctx.semester_id}&subject_id=${ctx.subject_id}`;
+      }
+
+      async function refreshAttendance() {
+        const ctx = await getJson("/api/faculty/context");
+        if (!ctx || !ctx.context || !ctx.context.subject_id) return;
+
+        const q = `?semester_id=${ctx.context.semester_id}&subject_id=${ctx.context.subject_id}`;
+        const [summary, list] = await Promise.all([
+          getJson(`/attendance/summary${q}`),
+          getJson(`/attendance${q}`)
+        ]);
+
+        if (summary) {
+          document.getElementById("totalRecords").textContent = summary.total_records;
+          document.getElementById("todayRecords").textContent = summary.today_records;
+          document.getElementById("uniqueStudents").textContent = summary.unique_students;
+          document.getElementById("knownFaces").textContent = summary.known_faces;
+        }
+
+        const rows = (list && list.records) || [];
+        const body = document.getElementById("recordsBody");
+        body.innerHTML = rows.length
+          ? rows.slice(0, 20).map(r => `<tr><td>${r.name}</td><td>${r.semester_name || "-"}</td><td>${r.subject_name || "-"}</td><td>${r.timestamp}</td></tr>`).join("")
+          : "<tr><td colspan='4'>No records yet for this class.</td></tr>";
+      }
+
+      async function postRecognition(url, formData) {
+        const out = await send(url, "POST", formData);
+        if (!out) return;
+        const recognized = (out.recognized || []).join(", ") || "none";
+        const marked = (out.marked_now || []).join(", ") || "none";
+        setStatus(`Recognized: ${recognized} | Newly marked: ${marked}`);
+        await refreshAttendance();
+      }
+
+      async function initCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          video.srcObject = stream;
+        } catch (_) {
+          setStatus("Camera access denied. Upload image/video instead.", true);
+        }
+      }
+
+      semesterEl.addEventListener("change", async () => {
+        const sem = Number(semesterEl.value);
+        if (sem) await loadSubjects(sem);
+      });
+
+      document.getElementById("setContextBtn").addEventListener("click", async () => {
+        const semester_id = Number(semesterEl.value);
+        const subject_id = Number(subjectEl.value);
+        if (!semester_id || !subject_id) return setStatus("Select semester and subject first.", true);
+
+        try {
+          await send("/api/faculty/context", "POST", { semester_id, subject_id });
+          setStatus("Attendance session started.");
+          await refreshContext();
+          await refreshAttendance();
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      });
+
+      document.getElementById("captureBtn").addEventListener("click", () => {
+        if (!video.videoWidth) return setStatus("Camera not ready.", true);
+        const ctx = canvas.getContext("2d");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        canvas.toBlob(async (blob) => {
+          try {
+            const fd = new FormData();
+            fd.append("image", blob, "capture.jpg");
+            fd.append("source", "camera");
+            await postRecognition("/recognize", fd);
+          } catch (err) {
+            setStatus(err.message, true);
+          }
+        }, "image/jpeg", 0.9);
+      });
+
+      document.getElementById("analyzeImageBtn").addEventListener("click", async () => {
+        const file = document.getElementById("imageUpload").files[0];
+        if (!file) return setStatus("Select an image first.", true);
+        try {
+          const fd = new FormData();
+          fd.append("image", file);
+          fd.append("source", "upload-image");
+          await postRecognition("/recognize", fd);
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      });
+
+      document.getElementById("analyzeVideoBtn").addEventListener("click", async () => {
+        const file = document.getElementById("videoUpload").files[0];
+        if (!file) return setStatus("Select a video first.", true);
+        try {
+          const fd = new FormData();
+          fd.append("video", file);
+          await postRecognition("/recognize-video", fd);
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      });
+
+      const clearBtn = document.getElementById("clearBtn");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", async () => {
+          if (!confirm("Clear all attendance records?")) return;
+          try {
+            await send("/attendance/clear", "POST", new FormData());
+            setStatus("All attendance records cleared.");
+            await refreshAttendance();
+          } catch (err) {
+            setStatus(err.message, true);
+          }
+        });
+      }
+
+      loadSemesters().then(refreshContext).then(refreshAttendance);
+      initCamera();
+    }
+
+    if (ROLE === "student") {
+      async function refreshStudent() {
+        const [summary, records] = await Promise.all([
+          getJson("/student/attendance/summary"),
+          getJson("/student/attendance")
+        ]);
+
+        if (summary) {
+          document.getElementById("overallPercentage").textContent = `${summary.overall_percentage}%`;
+          document.getElementById("lowCount").textContent = (summary.low_attendance_alerts || []).length;
+
+          const subjectRows = summary.subject_wise || [];
+          const subjectBody = document.getElementById("subjectSummaryBody");
+          subjectBody.innerHTML = subjectRows.length
+            ? subjectRows.map(s => `<tr><td>${s.semester_name}</td><td>${s.subject_name}</td><td>${s.attended_classes}</td><td>${s.total_classes}</td><td>${s.attendance_percentage}%</td></tr>`).join("")
+            : "<tr><td colspan='5'>No subject-wise data available yet.</td></tr>";
+
+          const alerts = summary.low_attendance_alerts || [];
+          const alertsBox = document.getElementById("alertsBox");
+          alertsBox.innerHTML = alerts.length
+            ? alerts.map(a => `${a.semester_name} - ${a.subject_name}: ${a.attendance_percentage}% (required ${a.required_threshold}%)`).join("<br>")
+            : "No low attendance alerts.";
+          alertsBox.style.borderColor = alerts.length ? "#ffd9ac" : "#cfe4dd";
+          alertsBox.style.background = alerts.length ? "#fff7eb" : "#eef9f4";
+          alertsBox.style.color = alerts.length ? "#7a4504" : "#144734";
+        }
+
+        const rows = (records && records.records) || [];
+        const body = document.getElementById("studentRecordsBody");
+        body.innerHTML = rows.length
+          ? rows.map(r => `<tr><td>${r.semester_name || "-"}</td><td>${r.subject_name || "-"}</td><td>${r.timestamp}</td></tr>`).join("")
+          : "<tr><td colspan='3'>No attendance records found.</td></tr>";
+      }
+
+      refreshStudent();
+    }
+  </script>
+</body>
+</html>

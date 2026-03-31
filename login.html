@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Government Engineering College Ajmer - Smart Attendance System</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --card: #ffffff;
+      --ink: #1d1e22;
+      --muted: #666;
+      --brand: #0f766e;
+      --line: #e8e2d7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 20% 15%, #fff, rgba(255,255,255,0) 35%),
+        linear-gradient(160deg, #ebe4d6, var(--bg));
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--ink);
+    }
+
+    .card {
+      width: min(430px, 92vw);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 18px 36px rgba(0,0,0,0.08);
+      padding: 22px;
+      animation: pop 0.35s ease;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    p {
+      color: var(--muted);
+      margin: 8px 0 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 11px;
+      margin-bottom: 14px;
+      font-size: 0.95rem;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.96rem;
+      padding: 11px;
+      cursor: pointer;
+    }
+
+    .hint {
+      margin-top: 12px;
+      background: #f4fbfa;
+      border: 1px solid #d9ecea;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.9rem;
+      color: #245;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      min-height: 18px;
+      color: #701;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(6px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <form class="card" id="loginForm">
+    <h1>Government Engineering College Ajmer - Smart Attendance System</h1>
+    <p>Login to access your role-based dashboard.</p>
+
+    <label for="username">Username</label>
+    <input id="username" name="username" placeholder="Enter username" required>
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" placeholder="Enter password" required>
+
+    <button type="submit">Login</button>
+
+    <div class="hint">
+      Default users:<br>
+      admin / admin123<br>
+      faculty / faculty123<br>
+      Admin can create additional faculty accounts from Admin Dashboard.
+    </div>
+
+    <div class="status" id="status"></div>
+  </form>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const statusBox = document.getElementById("status");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      statusBox.textContent = "Checking credentials...";
+
+      const payload = {
+        username: form.username.value,
+        password: form.password.value,
+      };
+
+      try {
+        const res = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Login failed");
+        window.location.href = data.redirect || "/dashboard";
+      } catch (err) {
+        statusBox.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>
